@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Egg Game</title>
+<style>
+body {
+    background: #0f172a;
+    color: white;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 { margin-top: 20px; }
+
+.eggs-container {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    margin-top: 50px;
+    position: relative;
+}
+
+/* Eggs */
+.egg {
+    width: 100px;
+    height: 140px;
+    border-radius: 50% 50% 45% 45%;
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    transition: transform 0.3s;
+    border: 2px solid #fff;
+}
+
+.egg.red { background: linear-gradient(to top, #f87171, #fca5a5); }
+.egg.yellow { background: linear-gradient(to top, #facc15, #fde68a); }
+.egg.blue { background: linear-gradient(to top, #3b82f6, #60a5fa); }
+.egg.white { background: linear-gradient(to top, #fefefe, #e5e7eb); }
+
+.egg:hover { transform: scale(1.1); }
+.egg.cracked { transform: rotate(15deg) scale(0.9); opacity: 0.7; }
+
+/* Chick */
+.chick {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: yellow;
+    border-radius: 50%;
+    top: -60px;
+    left: 20px;
+    border: 2px solid orange;
+    display: none;
+}
+
+/* Speech bubble */
+.speech {
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    color: black;
+    padding: 5px 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    display: none;
+}
+
+@keyframes moveChick {
+    0%,100% { left: 20px; }
+    50% { left: 40px; }
+}
+
+/* TRY AGAIN button */
+.btn {
+    margin-top: 40px;
+    padding: 12px 25px;
+    background: linear-gradient(45deg, #22c55e, #4ade80);
+    border: none;
+    border-radius: 12px;
+    color: black;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: pointer;
+    display: none;
+    transition: 0.3s;
+}
+
+.btn:hover { transform: scale(1.1); }
+</style>
+</head>
+<body>
+
+<h1>🥚 Click an Egg!</h1>
+
+<div class="eggs-container">
+    <div id="egg1" class="egg blue"></div>
+    <div id="egg2" class="egg yellow"></div>
+    <div id="egg3" class="egg red"></div>
+    <div id="egg4" class="egg white"></div>
+</div>
+
+<button id="retry" class="btn">TRY AGAIN</button>
+
+<script>
+let lastReward = { egg1: null, egg2: null, egg3: null, egg4: null };
+const eggs = ["egg1", "egg2", "egg3", "egg4"];
+const retry = document.getElementById("retry");
+
+function getRandomReward(eggId){
+    const rewards = [0,1,2,3];
+    let filtered = rewards.filter(r => r !== lastReward[eggId]);
+    let random = filtered[Math.floor(Math.random()*filtered.length)];
+    lastReward[eggId] = random;
+    return random;
+}
+
+eggs.forEach(id => {
+    const egg = document.getElementById(id);
+    egg.addEventListener("click", () => {
+        egg.classList.add("cracked");
+
+        // Create chick
+        const chick = document.createElement("div");
+        chick.classList.add("chick");
+        egg.appendChild(chick);
+        chick.style.display = "block";
+        chick.style.animation = "moveChick 1s infinite";
+
+        // Create speech bubble
+        const bubble = document.createElement("div");
+        bubble.classList.add("speech");
+        egg.appendChild(bubble);
+        bubble.style.display = "block";
+
+        let reward = getRandomReward(id);
+        bubble.textContent = (reward === 0) ? "🐣 BETTER LUCK NEXT TIME!" : `🐣 Congrats! You won $${reward}!`;
+
+        // Move bubble with chick
+        const moveInterval = setInterval(()=>{
+            const chickLeft = parseInt(window.getComputedStyle(chick).left);
+            bubble.style.left = (chickLeft + 30) + "px";
+        },50);
+
+        eggs.forEach(otherId => {
+            if(otherId !== id) document.getElementById(otherId).style.pointerEvents="none";
+        });
+
+        // Show retry button
+        retry.style.display = "inline-block";
+
+        // Store interval to clear on retry
+        egg.moveInterval = moveInterval;
+    });
+});
+
+// Retry button
+retry.addEventListener("click", ()=>{
+    eggs.forEach(id=>{
+        const egg=document.getElementById(id);
+        egg.classList.remove("cracked");
+        egg.style.pointerEvents="auto";
+
+        const chick = egg.querySelector(".chick");
+        if(chick) {
+            clearInterval(egg.moveInterval); // stop movement
+            egg.removeChild(chick);
+        }
+        const bubble = egg.querySelector(".speech");
+        if(bubble) egg.removeChild(bubble);
+    });
+    retry.style.display="none";
+});
+</script>
+
+</body>
+</html>
