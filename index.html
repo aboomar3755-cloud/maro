@@ -12,7 +12,6 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Layout */
 .eggs-container {
     display: flex;
     justify-content: center;
@@ -21,7 +20,6 @@ body {
     position: relative;
 }
 
-/* Egg */
 .egg {
     width: 110px;
     height: 150px;
@@ -30,31 +28,24 @@ body {
     position: relative;
     overflow: hidden;
     transition: 0.3s;
-
     box-shadow:
         inset -10px -15px 25px rgba(0,0,0,0.4),
         inset 5px 5px 15px rgba(255,255,255,0.3),
         0 15px 25px rgba(0,0,0,0.6);
 }
+.egg:hover { transform: translateY(-10px) scale(1.05); }
 
-.egg:hover {
-    transform: translateY(-10px) scale(1.05);
-}
-
-/* Colors */
 .blue { background: linear-gradient(145deg,#60a5fa,#1d4ed8); }
 .yellow { background: linear-gradient(145deg,#fde047,#eab308); }
 .red { background: linear-gradient(145deg,#fca5a5,#dc2626); }
 .white { background: linear-gradient(145deg,#ffffff,#d1d5db); }
 
-/* Crack */
 .crack {
     position: absolute;
     width: 100%;
     height: 100%;
     opacity: 0;
 }
-
 .crack::before,
 .crack::after {
     content: "";
@@ -65,25 +56,17 @@ body {
     left: 50%;
     transform-origin: top;
 }
-
 .crack::before { transform: translateX(-50%) scaleY(0); }
-.crack::after {
-    transform: translateX(-50%) scaleY(0) rotate(10deg);
-    opacity: 0.6;
-}
+.crack::after { transform: translateX(-50%) scaleY(0) rotate(10deg); opacity: 0.6; }
 
 @keyframes crackLine {
     0% { transform: translateX(-50%) scaleY(0); }
     100% { transform: translateX(-50%) scaleY(1); }
 }
-
 .cracking { opacity: 1; }
 .cracking::before,
-.cracking::after {
-    animation: crackLine 1s forwards;
-}
+.cracking::after { animation: crackLine 1s forwards; }
 
-/* Chick */
 .chick {
     position: absolute;
     top: 40px;
@@ -96,25 +79,18 @@ body {
     transform: scale(0);
     z-index: 5;
 }
-
-/* Pop */
 @keyframes pop {
     0% { transform: scale(0); top: 40px; }
     60% { transform: scale(1.2); top: -80px; }
     100% { transform: scale(1); top: -70px; }
 }
-
 .showChick { animation: pop 0.6s ease forwards; }
-
-/* Bounce */
 @keyframes bounce {
     0%,100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
 }
-
 .bounce { animation: bounce 1s infinite; }
 
-/* Eyes */
 .chick::before,
 .chick::after {
     content: "";
@@ -128,7 +104,6 @@ body {
 .chick::before { left: 18px; }
 .chick::after { right: 18px; }
 
-/* Beak */
 .beak {
     position: absolute;
     border-left: 8px solid transparent;
@@ -139,7 +114,6 @@ body {
     transform: translateX(-50%);
 }
 
-/* 🔥 MESSAGE FIXED */
 .speech {
     position: absolute;
     top: -200px;
@@ -153,21 +127,17 @@ body {
     font-weight: bold;
     white-space: nowrap;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    z-index: 999; /* 👈 أهم حاجة */
+    z-index: 999;
+    transition: all 0.3s ease;
 }
 
-/* Animation */
 @keyframes popText {
     0% { transform: translateX(-50%) scale(0); }
     80% { transform: translateX(-50%) scale(1.3); }
     100% { transform: translateX(-50%) scale(1); }
 }
+.showText { animation: popText 0.4s ease forwards; }
 
-.showText {
-    animation: popText 0.4s ease forwards;
-}
-
-/* Button */
 .btn {
     margin-top: 50px;
     padding: 15px 35px;
@@ -181,7 +151,6 @@ body {
 </head>
 
 <body>
-
 <h1>🥚 Pick Your Egg</h1>
 
 <div class="eggs-container" id="container">
@@ -197,7 +166,6 @@ body {
 <audio id="chickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-chick-chirp-621.mp3"></audio>
 
 <script>
-
 let lastReward = { egg1:null, egg2:null, egg3:null, egg4:null };
 const eggs = ["egg1","egg2","egg3","egg4"];
 const retry = document.getElementById("retry");
@@ -206,8 +174,9 @@ const container = document.getElementById("container");
 const crackSound = document.getElementById("crackSound");
 const chickSound = document.getElementById("chickSound");
 
+// 🎯 الاحتمالات: 0=خسارة 1,2,3=جائزة
 function getReward(id){
-    let rewards = [0,1,2,3];
+    let rewards = [0,0,0,0,1,2,3]; // 0 يظهر أكثر
     let filtered = rewards.filter(r => r !== lastReward[id]);
     let result = filtered[Math.floor(Math.random()*filtered.length)];
     lastReward[id] = result;
@@ -218,7 +187,6 @@ eggs.forEach(id=>{
     const egg = document.getElementById(id);
 
     egg.addEventListener("click", ()=>{
-
         if(egg.classList.contains("used")) return;
         egg.classList.add("used");
 
@@ -247,21 +215,26 @@ eggs.forEach(id=>{
                 chickSound.play();
             },500);
 
-            // 🔥 MESSAGE OUTSIDE THE EGG
+            // 🚀 MESSAGE
+            document.querySelectorAll(".speech").forEach(e=>e.remove());
             const bubble = document.createElement("div");
             bubble.className = "speech";
 
             let reward = getReward(id);
             bubble.textContent = reward === 0
             ? "🐣 BETTER LUCK NEXT TIME!"
-            : `🐣 YOU WON $${reward}!`;
+            : reward === 3
+            ? "💰 JACKPOT! $3!"
+            : reward === 2
+            ? "🔥 NICE! $2!"
+            : "✨ YOU WON $1!";
 
             container.appendChild(bubble);
 
-            // position above clicked egg
+            const containerRect = container.getBoundingClientRect();
             const rect = egg.getBoundingClientRect();
-            bubble.style.left = rect.left + rect.width/2 + "px";
-            bubble.style.top = rect.top - 50 + "px";
+            bubble.style.left = (rect.left - containerRect.left + rect.width/2) + "px";
+            bubble.style.top = (rect.top - containerRect.top - 60) + "px";
 
             setTimeout(()=>{
                 bubble.classList.add("showText");
@@ -284,7 +257,6 @@ eggs.forEach(id=>{
 retry.addEventListener("click", ()=>{
     eggs.forEach(id=>{
         const egg = document.getElementById(id);
-
         egg.innerHTML="";
         egg.classList.remove("used");
         egg.style.pointerEvents="auto";
@@ -292,10 +264,8 @@ retry.addEventListener("click", ()=>{
     });
 
     document.querySelectorAll(".speech").forEach(e=>e.remove());
-
     retry.style.display="none";
 });
 </script>
-
 </body>
 </html>
