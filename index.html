@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Egg Game Pro MAX</title>
+<title>Egg Game FINAL</title>
 
 <style>
 body {
@@ -17,7 +17,8 @@ body {
     display: flex;
     justify-content: center;
     gap: 60px;
-    margin-top: 80px;
+    margin-top: 120px;
+    position: relative;
 }
 
 /* Egg */
@@ -27,8 +28,8 @@ body {
     border-radius: 50% 50% 45% 45%;
     cursor: pointer;
     position: relative;
-    transition: 0.3s;
     overflow: hidden;
+    transition: 0.3s;
 
     box-shadow:
         inset -10px -15px 25px rgba(0,0,0,0.4),
@@ -46,24 +47,40 @@ body {
 .red { background: linear-gradient(145deg,#fca5a5,#dc2626); }
 .white { background: linear-gradient(145deg,#ffffff,#d1d5db); }
 
-/* Crack overlay */
+/* Crack */
 .crack {
     position: absolute;
     width: 100%;
     height: 100%;
-    background: url('https://i.imgur.com/6X12F8S.png') center/contain no-repeat;
     opacity: 0;
 }
 
-/* Crack animation */
-@keyframes cracking {
-    0% { opacity: 0; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.02); }
-    100% { opacity: 1; transform: scale(1.05); }
+.crack::before,
+.crack::after {
+    content: "";
+    position: absolute;
+    width: 3px;
+    height: 100%;
+    background: black;
+    left: 50%;
+    transform-origin: top;
 }
 
-.cracking {
-    animation: cracking 1s forwards;
+.crack::before { transform: translateX(-50%) scaleY(0); }
+.crack::after {
+    transform: translateX(-50%) scaleY(0) rotate(10deg);
+    opacity: 0.6;
+}
+
+@keyframes crackLine {
+    0% { transform: translateX(-50%) scaleY(0); }
+    100% { transform: translateX(-50%) scaleY(1); }
+}
+
+.cracking { opacity: 1; }
+.cracking::before,
+.cracking::after {
+    animation: crackLine 1s forwards;
 }
 
 /* Chick */
@@ -77,18 +94,17 @@ body {
     border-radius: 50%;
     box-shadow: 0 8px 15px rgba(0,0,0,0.4);
     transform: scale(0);
+    z-index: 5;
 }
 
-/* Pop animation */
+/* Pop */
 @keyframes pop {
     0% { transform: scale(0); top: 40px; }
     60% { transform: scale(1.2); top: -80px; }
     100% { transform: scale(1); top: -70px; }
 }
 
-.showChick {
-    animation: pop 0.6s ease forwards;
-}
+.showChick { animation: pop 0.6s ease forwards; }
 
 /* Bounce */
 @keyframes bounce {
@@ -96,9 +112,7 @@ body {
     50% { transform: translateY(-10px); }
 }
 
-.bounce {
-    animation: bounce 1s infinite;
-}
+.bounce { animation: bounce 1s infinite; }
 
 /* Eyes */
 .chick::before,
@@ -125,17 +139,32 @@ body {
     transform: translateX(-50%);
 }
 
-/* Speech */
+/* 🔥 MESSAGE FIXED */
 .speech {
     position: absolute;
-    top: -120px;
+    top: -200px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(0);
     background: white;
     color: black;
-    padding: 8px 14px;
-    border-radius: 12px;
-    font-size: 14px;
+    padding: 12px 18px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: bold;
+    white-space: nowrap;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 999; /* 👈 أهم حاجة */
+}
+
+/* Animation */
+@keyframes popText {
+    0% { transform: translateX(-50%) scale(0); }
+    80% { transform: translateX(-50%) scale(1.3); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+
+.showText {
+    animation: popText 0.4s ease forwards;
 }
 
 /* Button */
@@ -155,7 +184,7 @@ body {
 
 <h1>🥚 Pick Your Egg</h1>
 
-<div class="eggs-container">
+<div class="eggs-container" id="container">
     <div id="egg1" class="egg blue"></div>
     <div id="egg2" class="egg yellow"></div>
     <div id="egg3" class="egg red"></div>
@@ -164,7 +193,6 @@ body {
 
 <button id="retry" class="btn">TRY AGAIN</button>
 
-<!-- Sounds -->
 <audio id="crackSound" src="https://assets.mixkit.co/sfx/preview/mixkit-egg-cracking-2466.mp3"></audio>
 <audio id="chickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-chick-chirp-621.mp3"></audio>
 
@@ -173,6 +201,7 @@ body {
 let lastReward = { egg1:null, egg2:null, egg3:null, egg4:null };
 const eggs = ["egg1","egg2","egg3","egg4"];
 const retry = document.getElementById("retry");
+const container = document.getElementById("container");
 
 const crackSound = document.getElementById("crackSound");
 const chickSound = document.getElementById("chickSound");
@@ -193,7 +222,6 @@ eggs.forEach(id=>{
         if(egg.classList.contains("used")) return;
         egg.classList.add("used");
 
-        // crack layer
         const crack = document.createElement("div");
         crack.className = "crack";
         egg.appendChild(crack);
@@ -203,7 +231,6 @@ eggs.forEach(id=>{
             crackSound.play();
         },200);
 
-        // after crack → chick pops
         setTimeout(()=>{
             const chick = document.createElement("div");
             chick.className = "chick";
@@ -213,7 +240,6 @@ eggs.forEach(id=>{
             chick.appendChild(beak);
 
             egg.appendChild(chick);
-
             chick.classList.add("showChick");
 
             setTimeout(()=>{
@@ -221,20 +247,28 @@ eggs.forEach(id=>{
                 chickSound.play();
             },500);
 
-            // speech
+            // 🔥 MESSAGE OUTSIDE THE EGG
             const bubble = document.createElement("div");
             bubble.className = "speech";
 
             let reward = getReward(id);
             bubble.textContent = reward === 0
-            ? "🐣 TRY AGAIN!"
-            : `🐣 You won $${reward}!`;
+            ? "🐣 BETTER LUCK NEXT TIME!"
+            : `🐣 YOU WON $${reward}!`;
 
-            egg.appendChild(bubble);
+            container.appendChild(bubble);
+
+            // position above clicked egg
+            const rect = egg.getBoundingClientRect();
+            bubble.style.left = rect.left + rect.width/2 + "px";
+            bubble.style.top = rect.top - 50 + "px";
+
+            setTimeout(()=>{
+                bubble.classList.add("showText");
+            },100);
 
         },1200);
 
-        // disable others
         eggs.forEach(e=>{
             if(e!==id){
                 let el=document.getElementById(e);
@@ -257,9 +291,10 @@ retry.addEventListener("click", ()=>{
         egg.style.opacity="1";
     });
 
+    document.querySelectorAll(".speech").forEach(e=>e.remove());
+
     retry.style.display="none";
 });
-
 </script>
 
 </body>
