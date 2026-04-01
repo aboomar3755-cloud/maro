@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Egg Game Pro</title>
+<title>Egg Game Pro MAX</title>
 
 <style>
 body {
@@ -10,12 +10,6 @@ body {
     color: white;
     text-align: center;
     font-family: 'Segoe UI', sans-serif;
-}
-
-/* Title */
-h1 {
-    margin-top: 30px;
-    font-size: 32px;
 }
 
 /* Layout */
@@ -26,7 +20,7 @@ h1 {
     margin-top: 80px;
 }
 
-/* Egg 3D */
+/* Egg */
 .egg {
     width: 110px;
     height: 150px;
@@ -34,6 +28,7 @@ h1 {
     cursor: pointer;
     position: relative;
     transition: 0.3s;
+    overflow: hidden;
 
     box-shadow:
         inset -10px -15px 25px rgba(0,0,0,0.4),
@@ -51,32 +46,58 @@ h1 {
 .red { background: linear-gradient(145deg,#fca5a5,#dc2626); }
 .white { background: linear-gradient(145deg,#ffffff,#d1d5db); }
 
-/* Crack Effect */
-.egg::after {
-    content: "";
+/* Crack overlay */
+.crack {
     position: absolute;
     width: 100%;
     height: 100%;
     background: url('https://i.imgur.com/6X12F8S.png') center/contain no-repeat;
     opacity: 0;
-    transition: 0.3s;
 }
 
-.cracked::after {
-    opacity: 1;
+/* Crack animation */
+@keyframes cracking {
+    0% { opacity: 0; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1.05); }
+}
+
+.cracking {
+    animation: cracking 1s forwards;
 }
 
 /* Chick */
 .chick {
     position: absolute;
-    top: -75px;
+    top: 40px;
     left: 20px;
     width: 70px;
     height: 70px;
     background: radial-gradient(circle,#fde047,#facc15);
     border-radius: 50%;
     box-shadow: 0 8px 15px rgba(0,0,0,0.4);
-    animation: bounce 1s infinite ease-in-out;
+    transform: scale(0);
+}
+
+/* Pop animation */
+@keyframes pop {
+    0% { transform: scale(0); top: 40px; }
+    60% { transform: scale(1.2); top: -80px; }
+    100% { transform: scale(1); top: -70px; }
+}
+
+.showChick {
+    animation: pop 0.6s ease forwards;
+}
+
+/* Bounce */
+@keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.bounce {
+    animation: bounce 1s infinite;
 }
 
 /* Eyes */
@@ -90,15 +111,12 @@ h1 {
     border-radius: 50%;
     top: 22px;
 }
-
 .chick::before { left: 18px; }
 .chick::after { right: 18px; }
 
 /* Beak */
 .beak {
     position: absolute;
-    width: 0;
-    height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     border-top: 12px solid orange;
@@ -107,26 +125,7 @@ h1 {
     transform: translateX(-50%);
 }
 
-/* Wings */
-.wing {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    background: #facc15;
-    border-radius: 50%;
-    top: 35px;
-}
-
-.wing.left { left: -10px; }
-.wing.right { right: -10px; }
-
-/* Animation */
-@keyframes bounce {
-    0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-12px); }
-}
-
-/* Speech bubble */
+/* Speech */
 .speech {
     position: absolute;
     top: -120px;
@@ -137,8 +136,6 @@ h1 {
     padding: 8px 14px;
     border-radius: 12px;
     font-size: 14px;
-    white-space: nowrap;
-    box-shadow: 0 5px 10px rgba(0,0,0,0.3);
 }
 
 /* Button */
@@ -148,15 +145,8 @@ h1 {
     background: linear-gradient(45deg,#22c55e,#4ade80);
     border-radius: 20px;
     font-size: 20px;
-    font-weight: bold;
     cursor: pointer;
     display: none;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    transition: 0.3s;
-}
-
-.btn:hover {
-    transform: scale(1.1);
 }
 </style>
 </head>
@@ -174,11 +164,18 @@ h1 {
 
 <button id="retry" class="btn">TRY AGAIN</button>
 
+<!-- Sounds -->
+<audio id="crackSound" src="https://assets.mixkit.co/sfx/preview/mixkit-egg-cracking-2466.mp3"></audio>
+<audio id="chickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-chick-chirp-621.mp3"></audio>
+
 <script>
 
 let lastReward = { egg1:null, egg2:null, egg3:null, egg4:null };
 const eggs = ["egg1","egg2","egg3","egg4"];
 const retry = document.getElementById("retry");
+
+const crackSound = document.getElementById("crackSound");
+const chickSound = document.getElementById("chickSound");
 
 function getReward(id){
     let rewards = [0,1,2,3];
@@ -193,46 +190,56 @@ eggs.forEach(id=>{
 
     egg.addEventListener("click", ()=>{
 
-        if(egg.classList.contains("cracked")) return;
+        if(egg.classList.contains("used")) return;
+        egg.classList.add("used");
 
-        egg.classList.add("cracked");
+        // crack layer
+        const crack = document.createElement("div");
+        crack.className = "crack";
+        egg.appendChild(crack);
 
-        // Create chick
-        const chick = document.createElement("div");
-        chick.className = "chick";
+        setTimeout(()=>{
+            crack.classList.add("cracking");
+            crackSound.play();
+        },200);
 
-        const beak = document.createElement("div");
-        beak.className = "beak";
+        // after crack → chick pops
+        setTimeout(()=>{
+            const chick = document.createElement("div");
+            chick.className = "chick";
 
-        const wingL = document.createElement("div");
-        wingL.className = "wing left";
+            const beak = document.createElement("div");
+            beak.className = "beak";
+            chick.appendChild(beak);
 
-        const wingR = document.createElement("div");
-        wingR.className = "wing right";
+            egg.appendChild(chick);
 
-        chick.appendChild(beak);
-        chick.appendChild(wingL);
-        chick.appendChild(wingR);
+            chick.classList.add("showChick");
 
-        egg.appendChild(chick);
+            setTimeout(()=>{
+                chick.classList.add("bounce");
+                chickSound.play();
+            },500);
 
-        // Speech
-        const bubble = document.createElement("div");
-        bubble.className = "speech";
-        egg.appendChild(bubble);
+            // speech
+            const bubble = document.createElement("div");
+            bubble.className = "speech";
 
-        let reward = getReward(id);
+            let reward = getReward(id);
+            bubble.textContent = reward === 0
+            ? "🐣 TRY AGAIN!"
+            : `🐣 You won $${reward}!`;
 
-        bubble.textContent = reward === 0
-        ? "🐣 TRY AGAIN!"
-        : `🐣 You won $${reward}!`;
+            egg.appendChild(bubble);
 
-        // Disable others
+        },1200);
+
+        // disable others
         eggs.forEach(e=>{
-            if(e !== id){
-                let el = document.getElementById(e);
+            if(e!==id){
+                let el=document.getElementById(e);
                 el.style.pointerEvents="none";
-                el.style.opacity="0.5";
+                el.style.opacity="0.4";
             }
         });
 
@@ -241,19 +248,13 @@ eggs.forEach(id=>{
 });
 
 retry.addEventListener("click", ()=>{
-
     eggs.forEach(id=>{
         const egg = document.getElementById(id);
 
-        egg.classList.remove("cracked");
+        egg.innerHTML="";
+        egg.classList.remove("used");
         egg.style.pointerEvents="auto";
         egg.style.opacity="1";
-
-        const chick = egg.querySelector(".chick");
-        const bubble = egg.querySelector(".speech");
-
-        if(chick) chick.remove();
-        if(bubble) bubble.remove();
     });
 
     retry.style.display="none";
